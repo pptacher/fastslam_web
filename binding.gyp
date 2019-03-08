@@ -25,8 +25,7 @@
           "-lm",
           "-ldl",
           "-lhdf5_cpp",
-          "-lhdf5",
-        #  "-lfslam"
+          "-lhdf5"
       ],
         "ldflags": [
             "-L.",
