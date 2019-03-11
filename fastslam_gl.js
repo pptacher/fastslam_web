@@ -18,11 +18,78 @@ for (var i = 0; i < indices.length; i++) {
   indices[i] = i;
 }
 
+var zoom_rate=0.008;
+var xcamera = 0.0;
+var ycamera = 0.0;
+var zcamera = 250.0;
+const fieldOfView = 40 * Math.PI / 180;
+
+const zNear = 1;
+const zFar = 800.0;
+
+
 main();
 
 function main() {
 
   const canvas = document.querySelector('#glcanvas');
+
+  //tested on firefox 57.
+  canvas.onwheel = function (event){
+    if (event.ctrlKey) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var rect = canvas.getBoundingClientRect();
+
+        var mousex = event.clientX - rect.left;
+        var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+        var xnorm = 2 * mousex / canvas.clientWidth - 1;
+        var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+        var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+        var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+        var wheel = event.deltaY;
+        var zoom = 2 - Math.exp(-wheel*zoom_rate);
+        zcamera = Math.min( 700.0, Math.max (zoom * zcamera, 10.0 ));
+
+        xcamera = xworld - xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight) / ( zNear);
+        ycamera = yworld - ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear  ) / ( zNear);
+
+        xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
+        ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
+
+    }
+  }
+
+ /* canvas.onclick = function (event){
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var rect = canvas.getBoundingClientRect();
+
+        var mousex = event.clientX - rect.left;
+        var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+        var xnorm = 2 * mousex / canvas.clientWidth - 1;
+        var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+        var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView/2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+        var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView/2.0) * zNear ) / ( zNear) + ycamera;
+
+
+        console.log("mousex: " + mousex);
+        console.log("mousey: " + mousey);
+        console.log("xnorm: " + xnorm);
+        console.log("ynorm: " + ynorm);
+        console.log("xworld: " + xworld);
+        console.log("yworld: " + yworld);
+
+}*/
+
   const gl = canvas.getContext('webgl');
 
   if (!gl) {
@@ -43,7 +110,7 @@ function main() {
     void main() {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       gl_PointSize = 1.0;
-      color = exp(-0.000005*((aVertexID>float(uStart))?
+      color = exp(-0.000005*5.0/5.0*((aVertexID>float(uStart))?
                                 (-aVertexID+float(uStart)+5000.0 * 150.0):
                                 (-aVertexID+float(uStart))))
                           *vec4(0.0, 0.0, 0.0, 1);
@@ -120,6 +187,7 @@ function main() {
     for (var i = 0; i < 2 * NUM_PARTICLES; i++) {
       positions[block* 2 * NUM_PARTICLES + i] = tmp[i];
     }
+
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.id);
     gl.bufferData(gl.ARRAY_BUFFER,
                   indices,
@@ -158,10 +226,7 @@ function drawScene(gl, programInfo, programInfo1, block, buff_particles, buffers
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  const fieldOfView = 60 * Math.PI / 180;
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 400.0;
 
   const projectionMatrix = mat4.create();
   mat4.perspective(projectionMatrix,
@@ -170,10 +235,18 @@ function drawScene(gl, programInfo, programInfo1, block, buff_particles, buffers
                    zNear,
                    zFar);
 
+  /*mat4.ortho(projectionMatrix,
+              -380.0,
+              380.0,
+              -360.0,
+              360.0,
+              1.0,
+              800.0);*/
+
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix,
                  modelViewMatrix,
-                 [-50.0, -50.0, -250.0]);
+                 [-xcamera,-ycamera, -zcamera]);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.id);
   gl.vertexAttribPointer(
