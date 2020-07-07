@@ -17,7 +17,7 @@ void fastslam(uint n, ThreadData* data){
   std::string filename2 = "aa3_dr.h5";
   std::string filename3 = "measurement.h5";
   std::string filename4 = "timeLsr.bin";
-  std::string include_dir = "/app/data/";
+  std::string include_dir = "/opt/app/data/";
 
   std::string filename5 = include_dir + "poses.dat";
   std::ofstream ostrm(filename5, std::ios::binary);
