@@ -11,33 +11,121 @@ var stream = ss.createStream({
 
 ss(socket).emit('setup-stream', stream);
 
+const HISTORY_LENGTH = 5000;
+const NUM_PARTICLES = 150;
+var positions = new Float32Array( 2 * NUM_PARTICLES * HISTORY_LENGTH );
+var indices = new Float32Array( NUM_PARTICLES * HISTORY_LENGTH );
+for (var i = 0; i < indices.length; i++) {
+  indices[i] = i;
+}
+
+var zoom_rate=0.008;
+var xcamera = 0.0;
+var ycamera = 0.0;
+var zcamera = 250.0;
+const fieldOfView = 40 * Math.PI / 180;
+
+const zNear = 1;
+const zFar = 800.0;
+
+
 main();
 
 function main() {
 
+  console.log('hi');
   const canvas = document.querySelector('#glcanvas');
+
+  //tested on firefox 57.
+  canvas.onwheel = function (event){
+    if (event.ctrlKey) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var rect = canvas.getBoundingClientRect();
+
+        var mousex = event.clientX - rect.left;
+        var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+        var xnorm = 2 * mousex / canvas.clientWidth - 1;
+        var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+        var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+        var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+        var wheel = event.deltaY;
+        var zoom = 2 - Math.exp(-wheel*zoom_rate);
+        zcamera = Math.min( 700.0, Math.max (zoom * zcamera, 10.0 ));
+
+        xcamera = xworld - xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight) / ( zNear);
+        ycamera = yworld - ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear  ) / ( zNear);
+
+        xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
+        ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
+
+    }
+  }
+
+ /* canvas.onclick = function (event){
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var rect = canvas.getBoundingClientRect();
+
+        var mousex = event.clientX - rect.left;
+        var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+        var xnorm = 2 * mousex / canvas.clientWidth - 1;
+        var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+        var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView/2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+        var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView/2.0) * zNear ) / ( zNear) + ycamera;
+
+
+        console.log("mousex: " + mousex);
+        console.log("mousey: " + mousey);
+        console.log("xnorm: " + xnorm);
+        console.log("ynorm: " + ynorm);
+        console.log("xworld: " + xworld);
+        console.log("yworld: " + yworld);
+
+}*/
+
   const gl = canvas.getContext('webgl');
 
   if (!gl) {
-    alert('Unable to initialize WebGL. Your browser or machine may not support it.');
+    alert('Unable to initialize WebGL.');
     return;
   }
 
   const vsSource = `
     attribute vec4 aVertexPosition;
+    attribute float aVertexID;
 
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
+    uniform int uStart;
+
+    varying vec4 color;
 
     void main() {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       gl_PointSize = 1.0;
+      color = exp(-0.000005*5.0/5.0*((aVertexID>float(uStart))?
+                                (-aVertexID+float(uStart)+5000.0 * 150.0):
+                                (-aVertexID+float(uStart))))
+                          *vec4(0.0, 0.0, 0.0, 1);
+
     }
   `;
 
   const fsSource = `
+    precision mediump float;
+    varying vec4 color;
+
     void main() {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      gl_FragColor = color;
     }
   `;
 
@@ -47,10 +135,12 @@ function main() {
     program: shaderProgram,
     attribLocations: {
       vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexID: gl.getAttribLocation(shaderProgram, 'aVertexID'),
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      startIndex: gl.getUniformLocation(shaderProgram, 'uStart'),
     },
   };
 
@@ -88,81 +178,57 @@ function main() {
     },
   };
 
-  const buffers = initBuffers(gl);
+  var block = 0;
+
+  const buffers = initBuffers(gl, positions);
+  var buff_particles = 0;
 
   stream.on('readable', function() {
 
-    var positions = new Float32Array( 2 * 150 );
     var tmp = stream.read(1);//maybe we can get a Float32Array right here.
-    for (var i = 0; i < 2 * 150; i++) {
-      positions[i] = tmp[i];
+    for (var i = 0; i < 2 * NUM_PARTICLES; i++) {
+      positions[block* 2 * NUM_PARTICLES + i] = tmp[i];
     }
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.id);
+    gl.bufferData(gl.ARRAY_BUFFER,
+                  indices,
+                  gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
     gl.bufferData(gl.ARRAY_BUFFER,
                   positions,
                   gl.DYNAMIC_DRAW);
 
-    drawScene(gl, programInfo, programInfo1, buffers);
+    buff_particles = Math.min(buff_particles+NUM_PARTICLES, NUM_PARTICLES * HISTORY_LENGTH );
+    block=(block+1)%HISTORY_LENGTH;
+
+    drawScene(gl, programInfo, programInfo1, block, buff_particles, buffers);
+
   });
 
 }
 
-function initBuffers(gl) {
+function initBuffers(gl, positions) {
 
   const positionBuffer = gl.createBuffer();
-  const quadvbo= gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, quadvbo);
-  const quad = [
-     1.0,  1.0, 1.0, 1.0,
-    -1.0,  1.0, 0.0, 1.0,
-     1.0, -1.0, 1.0, 0.0,
-    -1.0, -1.0, 0.0, 0.0
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(quad),gl.STATIC_DRAW);
-  const frameBuffer = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-
-  texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
-                gl.canvas.clientWidth, gl.canvas.clientHeight, 0,
-                gl.RGBA, gl.UNSIGNED_BYTE, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-
-  /*const rbo = gl.createRenderbuffer();
-  gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA4, gl.canvas.clientWidth, gl.canvas.clientHeight);
-  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rbo);*/
-  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
-   alert("Framebuffer setup failed.");
-  }
-
-  return {
+  const idBuffer = gl.createBuffer();
+    return {
     position: positionBuffer,
-    fb: frameBuffer,
-    quadvbo: quadvbo,
-    texture: texture
+    id: idBuffer
   };
 }
 
-function drawScene(gl, programInfo, programInfo1, buffers) {
+function drawScene(gl, programInfo, programInfo1, block, buff_particles, buffers) {
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, buffers.fb);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   //gl.clearDepth(1.0);
   //gl.enable(gl.DEPTH_TEST);
   //gl.depthFunc(gl.LEQUAL);
-  //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  const fieldOfView = 60 * Math.PI / 180;
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 400.0;
 
   const projectionMatrix = mat4.create();
   mat4.perspective(projectionMatrix,
@@ -171,10 +237,28 @@ function drawScene(gl, programInfo, programInfo1, buffers) {
                    zNear,
                    zFar);
 
+  /*mat4.ortho(projectionMatrix,
+              -380.0,
+              380.0,
+              -360.0,
+              360.0,
+              1.0,
+              800.0);*/
+
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix,
                  modelViewMatrix,
-                 [-50.0, -50.0, -250.0]);
+                 [-xcamera,-ycamera, -zcamera]);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.id);
+  gl.vertexAttribPointer(
+         programInfo.attribLocations.vertexID,
+         1,
+         gl.FLOAT,
+         false,
+         0,
+         0);
+  gl.enableVertexAttribArray(programInfo.attribLocations.vertexID);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
   gl.vertexAttribPointer(
@@ -196,44 +280,16 @@ function drawScene(gl, programInfo, programInfo1, buffers) {
       programInfo.uniformLocations.modelViewMatrix,
       false,
       modelViewMatrix);
+  gl.uniform1i(
+      programInfo.uniformLocations.startIndex,
+      (NUM_PARTICLES*block-1)%(NUM_PARTICLES*HISTORY_LENGTH)
+      );
 
   gl.viewport(0, 0, gl.canvas.clientWidth, gl.canvas.clientHeight);
-  gl.drawArrays(gl.POINTS, 0, 150);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.clearColor(1.0, 1.0, 1.0, 1.0);
-  gl.clearDepth(1.0);
-  gl.disable(gl.DEPTH_TEST);
-  gl.disable(gl.BLEND);
-  //gl.depthFunc(gl.LEQUAL);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.quadvbo);
-  gl.vertexAttribPointer(
-        programInfo1.attribLocations.vertexPosition,
-        2,
-        gl.FLOAT,
-        false,
-        4 * 4,
-        0);
-  gl.enableVertexAttribArray(programInfo1.attribLocations.vertexPosition);
-
-  gl.vertexAttribPointer(
-        programInfo1.attribLocations.textureCoord,
-        2,
-        gl.FLOAT,
-        false,
-        4 * 4,
-        2 * 4);
-  gl.enableVertexAttribArray(programInfo1.attribLocations.textureCoord);
-
-  gl.useProgram(programInfo1.program);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.uniform1i(programInfo1.uniformLocations.textureSampler, 0);
-  gl.bindTexture(gl.TEXTURE_2D, buffers.texture);
-
-  gl.viewport(0, 0, gl.canvas.clientWidth, gl.canvas.clientHeight);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  if (buff_particles == NUM_PARTICLES * HISTORY_LENGTH && block > 0) {
+    gl.drawArrays(gl.POINTS, NUM_PARTICLES * block , NUM_PARTICLES * (HISTORY_LENGTH-block));
+  }
+  gl.drawArrays(gl.POINTS, 0, block>0 ? NUM_PARTICLES*block: NUM_PARTICLES*HISTORY_LENGTH);
 
 }
 
@@ -250,6 +306,7 @@ function initShaderProgram(gl, vsSource, fsSource) {
     alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
     return null;
   }
+
 
   return shaderProgram;
 }

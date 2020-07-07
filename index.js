@@ -43,7 +43,7 @@ module.exports.listen = function(app) {
 
     });
 
-  }); //io.on('connection', function(socket)
+  }); 
 
   return io;
 }

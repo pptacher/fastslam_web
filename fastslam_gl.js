@@ -32,6 +32,7 @@ main();
 
 function main() {
 
+  console.log('hi');
   const canvas = document.querySelector('#glcanvas');
 
   //tested on firefox 57.
