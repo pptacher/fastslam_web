@@ -51,6 +51,7 @@ RUN cd src \
 RUN npm install --unsafe-perm --verbose
 
 EXPOSE 3000
+# ENV PORT=3000
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64_lin:/opt/intel/compilers_and_libraries/linux/lib/intel64:/usr/local/lib64:/usr/local/lib:/usr/lib
 ENV DEBUG=fastslam:*

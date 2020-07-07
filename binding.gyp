@@ -3,9 +3,9 @@
     {
       'target_name': 'addon',
       'sources': [
-      '../tmp/linear_model.cc',
-      '../tmp/particle.cc',
-      '../tmp/fastslam.cc',
+      '../../tmp/linear_model.cc',
+      '../../tmp/particle.cc',
+      '../../tmp/fastslam.cc',
       'addon.cc'
       ],
       'include_dirs': [
@@ -35,6 +35,7 @@
             "-L./build/Release/obj.target",
             "-L/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64_lin",
             "-L/opt/intel/compilers_and_libraries/linux/lib/intel64",
+            "-L/usr/lib/x86_64-linux-gnu/hdf5/serial",
             "-Wl,-rpath=./build/Release",
             "-Wl,-rpath=/app",
             "-Wl,-rpath,@loader_path",

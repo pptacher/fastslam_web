@@ -305,6 +305,7 @@ function initShaderProgram(gl, vsSource, fsSource) {
     return null;
   }
 
+
   return shaderProgram;
 }
 

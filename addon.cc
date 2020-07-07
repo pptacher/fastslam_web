@@ -6,7 +6,7 @@
 #include <string.h>
 #include <assert.h>
 /////////////////////////////////////////////////////////////////////
-//boilerplate code from:
+//modified boilerplate code from:
 //https://github.com/nodejs/node-addon-examples
 //https://github.com/gabrielschulhof/abi-stable-node-addon-examples/blob/tsfn_example/thread_safe_function/node-api/example.js
 /////////////////////////////////////////////////////////////////////
