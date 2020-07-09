@@ -4,7 +4,7 @@ const fs = require('fs');
 
 var socket = io();
 var stream = ss.createStream({
-  highWaterMark: 1024,
+  highWaterMark: 1048,
   objectMode: true
 });
 
@@ -26,6 +26,10 @@ const fieldOfView = 40 * Math.PI / 180;
 
 const zNear = 1;
 const zFar = 800.0;
+
+var tpCache = new Array();
+var evCache = new Array();
+var prevDiff = -1;
 
 
 main();
@@ -62,6 +66,129 @@ function main() {
         xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
         ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
 
+    }
+  }
+
+  canvas.ontouchstart =  function(event) {
+    event.preventDefault();
+
+    if(event.targetTouches.length == 2){
+      for(var i=0; i<2; ++i){
+        tpCache.push(event.targetTouches[i]);
+      }
+    }
+
+  }
+
+  canvas.ontouchend=  function(event) {
+    event.preventDefault();
+
+    if (event.targetTouches.length == 0){
+
+    }
+  }
+
+  canvas.ontouchmove = function(event) {
+    event.preventDefault();
+    handle_pinch_zoom(event);
+  }
+
+  function handle_pinch_zoom(event) {
+    if(event.targetTouches.length==2 && event.changedTouches.length==2){
+      var point1=-1, point2=-1;
+      for(var i=0; i<tpCache.length; ++i){
+        if(tpCache[i].identifier==event.targetTouches[0].identifier){
+          point1 = i;
+        }
+        if(tpCache[i].identifier==event.targetTouches[1].identifier){
+          point2 = i;
+        }
+      }
+      if(point1>=0 && point2>=0){
+        var diff1 = Math.abs(tpCache[point1].clientX - ev.targetTouches[0].clientX);
+        var diff2 = Math.abs(tpCache[point2].clientX - ev.targetTouches[1].clientX);
+        var diff3 = Math.abs(tpCache[point1].clientY - ev.targetTouches[0].clientY);
+        var diff4 = Math.abs(tpCache[point2].clientY - ev.targetTouches[1].clientY);
+      }
+      var PINCH_TRESHHOLD = event.target.clientWidth / 10;
+      if(diff1 >= PINCH_TRESHHOLD && diff2 >= PINCH_TRESHHOLD){
+
+      }
+      else{
+        tpCache = new Array();
+      }
+    }
+  }
+
+  canvas.onpointerdown = function(event) {
+    evCache.push(event);
+  }
+
+  canvas.onpointermove = function(event) {
+
+    for(var i=0; i<evCache.length; ++i){
+      if(event.pointerId == evCache[i].pointerId){
+        evCache[i] = event;
+        break;
+      }
+    }
+
+    if(evCache.length == 2){
+      console.log(currDiff);
+      //var currDiff = Math.hypot(evCache[0].clientX - evCache[1].clientX ,evCache[0].clientY - evCache[1].clientY);
+      var currDiff = (evCache[0].clientX - evCache[1].clientX )*(evCache[0].clientX - evCache[1].clientX )+(evCache[0].clientY - evCache[1].clientY)*(evCache[0].clientY - evCache[1].clientY);
+    }
+
+    if(prevDiff>0){
+      if(currDiff > prevDiff){
+
+      }
+      else if(currDiff<prevDiff){
+
+      }
+
+      var rect = canvas.getBoundingClientRect();
+
+      var meanX = (evCache[0].clientX+evCache[1].clientX)/2.0;
+      var meanY = (evCache[0].clientY+evCache[1].clientY)/2.0;
+
+      var mousex = meanX - rect.left;
+      var mousey = canvas.clientHeight -(meanY - rect.top);
+
+      var xnorm = 2 * mousex / canvas.clientWidth - 1;
+      var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+      var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+      var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+      var wheel = currDiff-prevDiff;
+      var zoom = 2 - Math.exp(-wheel*zoom_rate);
+      zcamera = Math.min( 700.0, Math.max (zoom * zcamera, 10.0 ));
+
+      xcamera = xworld - xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight) / ( zNear);
+      ycamera = yworld - ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear  ) / ( zNear);
+
+      xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
+      ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
+
+    }
+
+    prevDiff = currDiff;
+    console.log(evCache.length);
+
+
+  }
+
+  canvas.onpointerup = function(event) {
+    for(var i=0; i<evCache.length; ++i){
+      if(evCache[i].pointerId == event.pointerId){
+        evCache.splice(i,1);
+        break;
+      }
+    }
+
+    if(evCache.length<2){
+      prevDiff = -1;
     }
   }
 
