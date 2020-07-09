@@ -32,12 +32,14 @@ var tpCache = new Array();
 var evCache = new Array();
 var prevDiff = -1;
 
+var xstart;
+var ystart;
+var drag = false;
 
 main();
 
 function main() {
 
-  console.log('hi');
   const canvas = document.querySelector('#glcanvas');
 
   //tested on firefox 57.
@@ -71,7 +73,8 @@ function main() {
   }
 
   canvas.ontouchstart =  function(event) {
-    event.preventDefault();
+    event.preventDefault;
+    console.log(event.targetTouches.length);
 
     if(event.targetTouches.length == 2){
       for(var i=0; i<2; ++i){
@@ -81,7 +84,72 @@ function main() {
 
   }
 
-  canvas.ontouchend=  function(event) {
+
+ canvas.onmousedown =  function(event) {
+    event.preventDefault;
+    //console.log(event.targetTouches.length);
+    console.log("on mouse down.")
+    drag = true;
+    /*if(event.targetTouches.length == 2){
+      for(var i=0; i<2; ++i){
+        tpCache.push(event.targetTouches[i]);
+      }
+    }*/
+
+    var rect = canvas.getBoundingClientRect();
+
+    var mousex = event.clientX - rect.left;
+    var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+    var xnorm = 2 * mousex / canvas.clientWidth - 1;
+    var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+    var xworld =   xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+    var yworld =   ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+    xstart = xworld;
+    ystart = yworld;
+    drag = true;
+
+  }
+
+  canvas.onmousemove = function(event) {
+    if(drag === false){
+      return;
+    }
+    var rect = canvas.getBoundingClientRect();
+
+    var mousex = event.clientX - rect.left;
+    var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+    var xnorm = 2 * mousex / canvas.clientWidth - 1;
+    var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+    var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+    var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+    xcamera = xcamera - xworld + xstart;
+    ycamera = ycamera - yworld + ystart;
+
+    //xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
+    //ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
+
+    //xstart = xworld;
+    //ystart = yworld;
+
+  }
+
+  canvas.onmouseup = function(event) {
+    drag = false;
+  }
+
+  canvas.onmouseleave = canvas.onmouseup;
+  canvas.onmouseout = canvas.onmouseup;
+  canvas.onmousecancel = canvas.onmouseup;
+
+
+
+/*  canvas.ontouchend=  function(event) {
     event.preventDefault();
 
     if (event.targetTouches.length == 0){
@@ -119,10 +187,13 @@ function main() {
         tpCache = new Array();
       }
     }
-  }
+  }*/
 
+
+/*
   canvas.onpointerdown = function(event) {
     evCache.push(event);
+    console.log(evCache.isPrimary);
   }
 
   canvas.onpointermove = function(event) {
@@ -175,7 +246,8 @@ function main() {
     }
 
     prevDiff = currDiff;
-    console.log(evCache.length);
+    //console.log(evCache.length);
+    //console.log(event.targetTouches.length);
 
 
   }
