@@ -21,6 +21,7 @@ for (var i = 0; i < indices.length; i++) {
 var zoom_rate=0.008;
 var xcamera = 0.0;
 var ycamera = 0.0;
+var xcamera1, ycamera1;
 var zcamera = 250.0;
 const fieldOfView = 40 * Math.PI / 180;
 
@@ -70,91 +71,89 @@ function main() {
 
     }
   }
+  canvas.onmousedown =  function(event) {
+     event.preventDefault;
+     //console.log(event.targetTouches.length);
+     console.log("on mouse down.")
+     drag = true;
+
+
+     var rect = canvas.getBoundingClientRect();
+
+     var mousex = event.clientX - rect.left;
+     var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+     var xnorm = 2 * mousex / canvas.clientWidth - 1;
+     var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+     var xworld =   xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+     var yworld =   ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+     xstart = xworld;
+     ystart = yworld;
+     drag = true;
+
+   }
+
+   canvas.onmousemove = function(event) {
+     if(drag === false){
+       return;
+     }
+     var rect = canvas.getBoundingClientRect();
+
+     var mousex = event.clientX - rect.left;
+     var mousey = canvas.clientHeight -(event.clientY - rect.top);
+
+     var xnorm = 2 * mousex / canvas.clientWidth - 1;
+     var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+     var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+     var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+
+     xcamera = xcamera - xworld + xstart;
+     ycamera = ycamera - yworld + ystart;
+
+     //xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
+     //ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
+
+     //xstart = xworld;
+     //ystart = yworld;
+
+   }
+
+   canvas.onmouseup = function(event) {
+     drag = false;
+   }
+
+   canvas.onmouseleave = canvas.onmouseup;
+   canvas.onmouseout = canvas.onmouseup;
+   canvas.onmousecancel = canvas.onmouseup;
+
 
   canvas.ontouchstart =  function(event) {
-    event.preventDefault;
-    console.log(event.targetTouches.length);
-
-    if(event.targetTouches.length == 2){
-      for(var i=0; i<2; ++i){
-        tpCache.push(event.targetTouches[i]);
-      }
-    }
-
-  }
-
-
- canvas.onmousedown =  function(event) {
-    event.preventDefault;
-    //console.log(event.targetTouches.length);
-    console.log("on mouse down.")
-    drag = true;
-    /*if(event.targetTouches.length == 2){
-      for(var i=0; i<2; ++i){
-        tpCache.push(event.targetTouches[i]);
-      }
-    }*/
-
-    var rect = canvas.getBoundingClientRect();
-
-    var mousex = event.clientX - rect.left;
-    var mousey = canvas.clientHeight -(event.clientY - rect.top);
-
-    var xnorm = 2 * mousex / canvas.clientWidth - 1;
-    var ynorm = 2 * mousey / canvas.clientHeight - 1;
-
-    var xworld =   xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
-    var yworld =   ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
-
-    xstart = xworld;
-    ystart = yworld;
-    drag = true;
-
-  }
-
-  canvas.onmousemove = function(event) {
-    if(drag === false){
-      return;
-    }
-    var rect = canvas.getBoundingClientRect();
-
-    var mousex = event.clientX - rect.left;
-    var mousey = canvas.clientHeight -(event.clientY - rect.top);
-
-    var xnorm = 2 * mousex / canvas.clientWidth - 1;
-    var ynorm = 2 * mousey / canvas.clientHeight - 1;
-
-    var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
-    var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
-
-    xcamera = xcamera - xworld + xstart;
-    ycamera = ycamera - yworld + ystart;
-
-    //xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
-    //ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
-
-    //xstart = xworld;
-    //ystart = yworld;
-
-  }
-
-  canvas.onmouseup = function(event) {
-    drag = false;
-  }
-
-  canvas.onmouseleave = canvas.onmouseup;
-  canvas.onmouseout = canvas.onmouseup;
-  canvas.onmousecancel = canvas.onmouseup;
-
-
-
-/*  canvas.ontouchend=  function(event) {
     event.preventDefault();
+    console.log(event.targetTouches.length);
+    tpCache = new Array();
+    if(event.targetTouches.length <= 2){
+      for(var i=0; i<event.targetTouches.length; ++i){
+        tpCache.push(event.targetTouches[i]);
+      }
+      xcamera1 = xcamera;
+      ycamera1 = ycamera;
+    }
 
+
+  }
+
+  canvas.ontouchend =  function(event) {
+    event.preventDefault();
+    tpCache = new Array();
     if (event.targetTouches.length == 0){
-
     }
   }
+  canvas.ontouchcancel = canvas.ontouchend;
+  canvas.ontouchleave = canvas.ontouchend;
+  canvas.ontouchout = canvas.ontouchend;
 
   canvas.ontouchmove = function(event) {
     event.preventDefault();
@@ -162,40 +161,115 @@ function main() {
   }
 
   function handle_pinch_zoom(event) {
+
     if(event.targetTouches.length==2 && event.changedTouches.length==2){
+
       var point1=-1, point2=-1;
       for(var i=0; i<tpCache.length; ++i){
         if(tpCache[i].identifier==event.targetTouches[0].identifier){
           point1 = i;
         }
-        if(tpCache[i].identifier==event.targetTouches[1].identifier){
+        else if(tpCache[i].identifier==event.targetTouches[1].identifier){
           point2 = i;
         }
       }
-      if(point1>=0 && point2>=0){
-        var diff1 = Math.abs(tpCache[point1].clientX - ev.targetTouches[0].clientX);
-        var diff2 = Math.abs(tpCache[point2].clientX - ev.targetTouches[1].clientX);
-        var diff3 = Math.abs(tpCache[point1].clientY - ev.targetTouches[0].clientY);
-        var diff4 = Math.abs(tpCache[point2].clientY - ev.targetTouches[1].clientY);
-      }
-      var PINCH_TRESHHOLD = event.target.clientWidth / 10;
-      if(diff1 >= PINCH_TRESHHOLD && diff2 >= PINCH_TRESHHOLD){
 
+
+      var diff1, diff2,diff3, diff4, diff5, diff6;
+      if(point1>=0 && point2>=0){
+        diff5 = Math.abs(tpCache[point1].clientY - event.targetTouches[0].clientY);
+        diff6 = Math.abs(tpCache[point2].clientY - event.targetTouches[1].clientY);
+
+        diff1 = (event.targetTouches[1].clientX - event.targetTouches[0].clientX);
+        diff2 = (event.targetTouches[1].clientY - event.targetTouches[0].clientY);
+        diff3 = (tpCache[point1].clientY - tpCache[point2].clientY);
+        diff4 = (tpCache[point1].clientX - tpCache[point2].clientX);
       }
       else{
         tpCache = new Array();
+        return;
+      }
+
+      var PINCH_TRESHHOLD = event.target.clientWidth / 50;
+      if(diff5<PINCH_TRESHHOLD || diff6<PINCH_TRESHHOLD){
+        return;
+      }
+
+      var delta = -diff3*diff3-diff4*diff4+diff1*diff1+diff2*diff2;
+
+      var rect = canvas.getBoundingClientRect();
+
+      var meanX = (event.targetTouches[0].clientX+event.targetTouches[1].clientX)/2.0;
+      var meanY = (event.targetTouches[1].clientY+event.targetTouches[0].clientY)/2.0;
+
+      var mousex = meanX - rect.left;
+      var mousey = canvas.clientHeight -(meanY - rect.top);
+
+      var xnorm = 2 * mousex / canvas.clientWidth - 1;
+      var ynorm = 2 * mousey / canvas.clientHeight - 1;
+
+      var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) + xcamera;
+      var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) + ycamera;
+      var rate=0.01;
+
+      var wheel = -delta*zoom_rate*rate;
+      var zoom = 2 - Math.exp(-wheel*zoom_rate);
+      zcamera = Math.min( 700.0, Math.max (zoom * zcamera, 10.0 ));
+
+
+      xcamera = xworld - xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight) / ( zNear);
+      ycamera = yworld - ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear  ) / ( zNear);
+
+
+
+      //xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
+      //ycamera = Math.min( 500.0, Math.max ( ycamera, -200.0 ));
+
+    }
+    else if (event.targetTouches.length==1){
+
+      var point1=-1;
+      for(var i=0; i<tpCache.length; ++i){
+        if(tpCache[i].identifier==event.targetTouches[0].identifier){
+          point1 = i;
+        }
+      }
+
+      var diff5, diff6;
+      if(point1>=0){
+        diff5 = tpCache[point1].clientY - event.targetTouches[0].clientY;
+        diff6 = tpCache[point1].clientX - event.targetTouches[0].clientX;
+
+        var rect = canvas.getBoundingClientRect();
+
+        var mousex = diff6;
+        var mousey =  -diff5;
+
+        var xnorm = 2 * mousex / canvas.clientWidth;
+        var ynorm = 2 * mousey / canvas.clientHeight;
+
+        var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) ;
+        var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) ;
+        //event.target.style.background = "green";
+
+        xcamera = xcamera1 + xworld;
+        ycamera = ycamera1 + yworld;
+
       }
     }
-  }*/
+  }
 
 
 /*
   canvas.onpointerdown = function(event) {
     evCache.push(event);
+    event.stopImmediatePropagation();
+    event.preventDefault();
     console.log(evCache.isPrimary);
   }
 
   canvas.onpointermove = function(event) {
+    event.preventDefault();
 
     for(var i=0; i<evCache.length; ++i){
       if(event.pointerId == evCache[i].pointerId){
@@ -248,10 +322,10 @@ function main() {
     //console.log(evCache.length);
     //console.log(event.targetTouches.length);
 
-
   }
 
   canvas.onpointerup = function(event) {
+    event.preventDefault();
     for(var i=0; i<evCache.length; ++i){
       if(evCache[i].pointerId == event.pointerId){
         evCache.splice(i,1);
@@ -262,7 +336,7 @@ function main() {
     if(evCache.length<2){
       prevDiff = -1;
     }
-  }
+  }*/
 
  /* canvas.onclick = function (event){
 
