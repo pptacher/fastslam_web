@@ -190,7 +190,7 @@ function main() {
         return;
       }
 
-      var PINCH_TRESHHOLD = event.target.clientWidth / 50;
+      var PINCH_TRESHHOLD = event.target.clientWidth / 500;
       if(diff5<PINCH_TRESHHOLD || diff6<PINCH_TRESHHOLD){
         return;
       }
@@ -217,9 +217,31 @@ function main() {
       zcamera = Math.min( 700.0, Math.max (zoom * zcamera, 10.0 ));
 
 
-      xcamera = xworld - xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight) / ( zNear);
-      ycamera = yworld - ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear  ) / ( zNear);
 
+      if(Math.abs(zoom-1)<0.01){
+
+        var diff5 = (tpCache[point2].clientX+tpCache[point1].clientX-event.targetTouches[0].clientX-event.targetTouches[1].clientX)/2.0;
+        var diff6 = (tpCache[point2].clientY+tpCache[point1].clientY-event.targetTouches[0].clientY-event.targetTouches[1].clientY)/2.0;
+
+        var mousex = diff5;
+        var mousey =  -diff6;
+
+        var xnorm = 2 * mousex / canvas.clientWidth;
+        var ynorm = 2 * mousey / canvas.clientHeight;
+
+        var xworld =  xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight  ) / ( zNear) ;
+        var yworld =  ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear ) / ( zNear) ;
+        //event.target.style.background = "green";
+
+        xcamera = xcamera1 + xworld;
+        ycamera = ycamera1 + yworld;
+
+      }
+      else{
+        xcamera = xworld - xnorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear * gl.canvas.clientWidth / gl.canvas.clientHeight) / ( zNear);
+        ycamera = yworld - ynorm * (zcamera) * ( Math.tan(fieldOfView / 2.0) * zNear  ) / ( zNear);
+
+      }
 
 
       //xcamera = Math.min( 300.0, Math.max ( xcamera, -300.0 ));
