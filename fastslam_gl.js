@@ -10,10 +10,10 @@ var stream = ss.createStream({
 
 ss(socket).emit('setup-stream', stream);
 
-const HISTORY_LENGTH = 5000;
+const HISTORY_LENGTH = 500;
 const NUM_PARTICLES = 150;
-var positions = new Float32Array( 2 * NUM_PARTICLES * HISTORY_LENGTH );
-var indices = new Float32Array( NUM_PARTICLES * HISTORY_LENGTH );
+var positions = new Float32Array( 10 * 2 * NUM_PARTICLES * HISTORY_LENGTH );
+var indices = new Float32Array( 10 * NUM_PARTICLES * HISTORY_LENGTH );
 for (var i = 0; i < indices.length; i++) {
   indices[i] = i;
 }
@@ -480,8 +480,8 @@ function main() {
   stream.on('readable', function() {
 
     var tmp = stream.read(1);//maybe we can get a Float32Array right here.
-    for (var i = 0; i < 2 * NUM_PARTICLES; i++) {
-      positions[block* 2 * NUM_PARTICLES + i] = tmp[i];
+    for (var i = 0; i < 10 * 2 * NUM_PARTICLES; i++) {
+      positions[block* 10 * 2 * NUM_PARTICLES + i] = tmp[i];
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.id);
@@ -493,7 +493,7 @@ function main() {
                   positions,
                   gl.DYNAMIC_DRAW);
 
-    buff_particles = Math.min(buff_particles+NUM_PARTICLES, NUM_PARTICLES * HISTORY_LENGTH );
+    buff_particles = Math.min(buff_particles+10 * NUM_PARTICLES, 10 * NUM_PARTICLES * HISTORY_LENGTH );
     block=(block+1)%HISTORY_LENGTH;
 
     drawScene(gl, programInfo, programInfo1, block, buff_particles, buffers);
@@ -576,14 +576,14 @@ function drawScene(gl, programInfo, programInfo1, block, buff_particles, buffers
       modelViewMatrix);
   gl.uniform1i(
       programInfo.uniformLocations.startIndex,
-      (NUM_PARTICLES*block-1)%(NUM_PARTICLES*HISTORY_LENGTH)
+      (10*NUM_PARTICLES*block-1)%(10*NUM_PARTICLES*HISTORY_LENGTH)
       );
 
   gl.viewport(0, 0, gl.canvas.clientWidth, gl.canvas.clientHeight);
-  if (buff_particles == NUM_PARTICLES * HISTORY_LENGTH && block > 0) {
-    gl.drawArrays(gl.POINTS, NUM_PARTICLES * block , NUM_PARTICLES * (HISTORY_LENGTH-block));
+  if (buff_particles == 10 * NUM_PARTICLES * HISTORY_LENGTH && block > 0) {
+    gl.drawArrays(gl.POINTS, 10 * NUM_PARTICLES * block , 10 * NUM_PARTICLES * (HISTORY_LENGTH-block));
   }
-  gl.drawArrays(gl.POINTS, 0, block>0 ? NUM_PARTICLES*block: NUM_PARTICLES*HISTORY_LENGTH);
+  gl.drawArrays(gl.POINTS, 0, block>0 ? 10 * NUM_PARTICLES*block: 10 * NUM_PARTICLES*HISTORY_LENGTH);
 
 }
 
