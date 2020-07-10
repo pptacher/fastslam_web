@@ -17,7 +17,7 @@ void fastslam(uint n, ThreadData* data){
   std::string filename2 = "aa3_dr.h5";
   std::string filename3 = "measurement.h5";
   std::string filename4 = "timeLsr.bin";
-  std::string include_dir = "/opt/app/data/";
+  std::string include_dir = "/home/pierre-paul/probabilistic_robotics_web/data/";
 
   std::string filename5 = include_dir + "poses.dat";
   std::ofstream ostrm(filename5, std::ios::binary);
@@ -53,6 +53,8 @@ void fastslam(uint n, ThreadData* data){
   float deltatime_iter_(0.0f);
   start_time_ = std::chrono::steady_clock::now();*/
 
+  float* poses;
+
   for (size_t i = stindex; i < time.n_elem; i++) {
     //start_iter_ = std::chrono::steady_clock::now();
 
@@ -75,11 +77,16 @@ void fastslam(uint n, ThreadData* data){
     //ostrm << particles << '\n';
 
     // the call into javascript is queued to be handled by the main event thread.
-    float* poses = (float*) malloc(2 * n * sizeof(float));
-    particles.cpy(poses);
-    assert(napi_call_threadsafe_function(data->tsfn,
-                                               (void*)poses,
-                                               napi_tsfn_blocking) == napi_ok);
+    if(i%10==0){
+      if(i>0){
+        assert(napi_call_threadsafe_function(data->tsfn,
+                                                   (void*)poses,
+                                                   napi_tsfn_blocking) == napi_ok);
+      }
+      poses = (float*) malloc(10 * 2 * n * sizeof(float));
+    }
+
+    particles.cpy(poses+(i%10)*2*n);
 
     /*if (i%1000==0) {
       //ostrm1.seekp(0,std::ios::beg);
@@ -91,6 +98,7 @@ void fastslam(uint n, ThreadData* data){
       {
         if (m[(uint32_t) data->thread] == 0) {
           m.erase((uint32_t) data->thread);
+          free(poses);
           return;
         }
       }
@@ -98,6 +106,8 @@ void fastslam(uint n, ThreadData* data){
 
 
   }
+  free(poses);
+
     //ostrm1.seekp(0,std::ios::beg);
     //particles.print_tree(ostrm1);
 

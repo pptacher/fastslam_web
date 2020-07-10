@@ -38,13 +38,13 @@ static void call_javascript(napi_env env, napi_value js_cb, void* context, void*
     assert(napi_get_undefined(env, &undefined) == napi_ok);
 
     // Retrieve positions computed by the worker thread.
-    void* poses = malloc(2 * 150 * sizeof(float));
+    void* poses = malloc(10 * 2 * 150 * sizeof(float));
 
     napi_value ab;
     napi_value ta;
-    napi_create_arraybuffer(env, 2 * 150 * sizeof(float), (void**)&poses, &ab);
-    memcpy(poses, data, 2 * 150 * sizeof(float));
-    napi_create_typedarray(env, napi_float32_array, 2 * 150, ab, 0, &ta);
+    napi_create_arraybuffer(env, 10 * 2 * 150 * sizeof(float), (void**)&poses, &ab);
+    memcpy(poses, data, 10 * 2 * 150 * sizeof(float));
+    napi_create_typedarray(env, napi_float32_array, 10 * 2 * 150, ab, 0, &ta);
 
     // Call the JavaScript function and pass it the prime that the secondary
     // thread found.
