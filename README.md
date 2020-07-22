@@ -1,7 +1,7 @@
 # fastslam_web
 Experimental fastslam algorithm web application. C++ application is running asynchronously, streaming particles positions to node.js server. Data is forwarded to client through socket.
 
-I deployed the fastslam nodejs/c++ app on google cloud [here](http://35.242.140.13:8080).
+I deployed the fastslam nodejs/c++ app on google cloud [here](http://35.242.140.13:8080) (server running from 0000 to 0800 UTC).
 
 ## Installation
 
