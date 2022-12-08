@@ -11,7 +11,7 @@
     "bindings": "~1.2.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
-    "express": "~4.16.0",
+    "express": "~4.18.2",
     "forwarded-for": "^1.0.1",
     "fs": "0.0.1-security",
     "http-errors": "~1.6.2",
